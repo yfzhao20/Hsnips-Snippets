@@ -78,12 +78,6 @@ function gen_matrix(nrow, ncol, index) {
 }
 
 
-function isAlignedEnvironment(editor) {
-    let text = editor.document.getText(new vscode.Range(new vscode.Position(0, 0), editor.selection.start));
-    const reg = /\\begin\{aligned\}[^\$]*?\\end\{aligned\}/g;
-    text = text.replace(reg, '');
-    return (text.indexOf('\\begin{aligned}') == -1)?false:true;
-}
 
 endglobal
 
