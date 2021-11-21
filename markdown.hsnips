@@ -1,0 +1,1057 @@
+global
+
+// vscode api
+
+const vscode = require("vscode");
+var editor=vscode.window.activeTextEditor
+var document=editor.document
+let selectedText = "";
+
+// selected text
+
+vscode.window.onDidChangeTextEditorSelection((e) => {
+    const newSelectedText = e.textEditor.document.getText(e.selections[0]);
+    if (newSelectedText) {
+        selectedText = newSelectedText;
+    }
+});
+
+function VISUAL() {
+    let sText=selectedText.replace(/\\\\/g,"\\\\\\ ").replace(/\}/g,"\\}");
+    selectedText="";
+    return sText;
+}
+
+// get ActiveTextEditor
+
+vscode.window.onDidChangeActiveTextEditor((e) => {
+    editor=vscode.window.activeTextEditor;
+    document=editor.document
+});
+
+
+
+// transformation cycle
+
+function cycle(arr,str){
+    let count = 0 ;
+    while (str!=arr[++count]&&count<arr.length);
+    return arr[(count+1)%arr.length]
+}
+
+// environment
+
+function math(context) {
+    return context.scopes.some(s => s.includes("math"));
+}
+
+function inline_math(context){
+    return context.scopes.some(s => s.includes("math.inline"));
+}
+
+function block_math(context){
+    return context.scopes.some(s => s.includes("math.block")) | context.scopes.some(s => s.includes("math.display"));
+}
+
+
+function isAlignedEnvironment(editor) {
+    let text = editor.document.getText(new vscode.Range(new vscode.Position(0, 0), editor.selection.start));
+    const reg = /\\begin\{aligned\}[^\$]*?\\end\{aligned\}/g;
+    text = text.replace(reg, '');
+    return (text.indexOf('\\begin{aligned}') == -1)?false:true;
+}
+
+// generate matrix
+
+function gen_matrix(nrow, ncol, index) {
+	let results = "\n";
+	let order = 1;
+	for (var i=0; i<nrow; i++){
+		results += '	';
+		for(var j = 0;j <ncol;j++){
+			results += "$" +(order ).toString() + ((j == ncol -1) ? /*((i != nrow-1) ? " \\\\\\" : "")*/ " \\\\\\" : " & ");
+			order ++;
+		}
+        results += index ? "\n" : "";
+	}
+	return results;
+}
+
+
+function isAlignedEnvironment(editor) {
+    let text = editor.document.getText(new vscode.Range(new vscode.Position(0, 0), editor.selection.start));
+    const reg = /\\begin\{aligned\}[^\$]*?\\end\{aligned\}/g;
+    text = text.replace(reg, '');
+    return (text.indexOf('\\begin{aligned}') == -1)?false:true;
+}
+
+endglobal
+
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\              markdown                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+# protect "oiint" "iiint" "asccos" "mathtt" "mathbb"
+priority 99999999
+context math(context)
+snippet `(?<=(oii|iii|ascc|mathtt|mathbb))` "prevent" iA
+
+endsnippet
+
+# %% -> ★
+context !math(context)
+snippet %% "big star" A
+$\color{red}\bigstar$ 
+endsnippet
+
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                transform                                             \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# use ";" to transform
+
+# \frac \dfrac
+
+context math(context)
+snippet `(\\dfrac|\\frac)\{(.+)\}\{(.+)};` "change ->" Ai
+``
+var frc = (m[1]=="\\dfrac")? "\\frac":"\\dfrac";
+rv = frc+"{" + m[2].replace(/\}/g, '\\}') + "}{" + m[3].replace(/\}/g, '\\}') + "}"
+``
+endsnippet
+
+# -> => --> ==> -> ==> 
+
+context math(context)
+snippet `(\\rightarrow|\\Rightarrow|\\longrightarrow|\\Longrightarrow|\\to|\\implies)(| );` "change ->" Ai
+``
+let r=["\\rightarrow","\\Rightarrow","\\longrightarrow","\\Longrightarrow","\\to","\\implies"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+# <= <= <-- <== <==
+
+context math(context)
+snippet `(\\leftarrow|\\Leftarrow|\\longleftarrow|\\Longleftarrow|\\impliedby)(| );` "change <-" Ai
+``
+let r=["\\leftarrow","\\Leftarrow","\\longleftarrow","\\Longleftarrow","\\impliedby"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\leftrightarrow|\\Leftrightarrow|\\longleftrightarrow|\\Longleftrightarrow|\\iff)(| );` "<=>" iA
+``
+let r=["\\leftrightarrow","\\Leftrightarrow","\\longleftrightarrow","\\Longleftrightarrow","\\iff"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+
+# ≤ ≤ ≦ ﹤
+
+context math(context)
+snippet `(\\le|\\leq|\\leqslant|<)(| );` "change <" Ai
+``
+let r=["\\le","\\leq","\\leqslant","<"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\re|\\req|\\reqslant|>)(| );` "change <" Ai
+``
+let r=["\\le","\\leq","\\leqslant","<"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+# dots
+
+context math(context)
+snippet `\\(c|v|l|d)dots( |);` "dots" iA
+\\``
+let r=["c","v","l","d"];
+rv=cycle(r,m[1]);
+``dots``rv=m[2]``
+endsnippet
+
+# var greek
+
+context math(context)
+snippet `(\\|\\var)(epsilon|theta|phi|pi|sigma|kappa)(| );` "greek change" iA
+``let r=["\\","\\var"];
+rv=cycle(r,m[1])+m[2]+m[3];``
+endsnippet
+
+# = <-> ≡ 
+
+context math(context)
+snippet `(=|\\equiv|\\approx)(| );` "=" iA
+``let r=["=","\\equiv","\\approx"];
+rv=cycle(r,m[1])+m[2]``
+endsnippet
+
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                environment                                           \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# align
+
+# aligned environment with VISUAL
+priority 300
+context math(context)
+snippet `Aln` "align" iA
+\begin{aligned}
+    ``rv = VISUAL();``$0
+\end{aligned}
+endsnippet
+
+# replace content of current line
+priority 200
+context math(context)
+snippet `aln` "Align" iA
+\begin{aligned}
+    ``
+    let pos = editor.selection.active;
+    let range = new vscode.Range(pos.line,0,pos.line,pos.character-2) //delete snippet "Aln"
+    let text = document.getText(range);
+    vscode.window.activeTextEditor.edit(editBuilder => {
+        editBuilder.delete(document.lineAt(pos).range);
+    });
+    rv=text.replace("=","&=");
+    `` $0
+\end{aligned}
+endsnippet
+
+
+# for `aligned`
+
+context isAlignedEnvironment(editor)
+snippet `==` "&=" iA
+&=
+endsnippet
+
+
+context isAlignedEnvironment(editor)
+snippet ++ "&=" iA
+&+
+endsnippet
+
+context isAlignedEnvironment(editor)
+snippet `&==` "&=&" iA
+&=&
+endsnippet
+
+# case/rcase
+
+context math(context)
+snippet `(?<!\{[a-zA-Z]*)(case|rcase)` "case" iA
+\begin{``rv=m[1]``s}
+    $1
+\end{``rv=m[1]``s}$0
+endsnippet
+
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                MATRIX                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# matrices
+
+# bmat22->
+# \begin{bmatrix}
+#    | & | \\
+#    | & | \\
+# \end{bmatrix}
+
+priority 2000
+context block_math(context)
+snippet `(bm|pm|m|vm)at([1-9])([1-9])` "matrix" iA
+\begin{``rv = m[1]``atrix}``
+	rv = gen_matrix(m[2],m[3],1);
+	``\end{``rv = m[1]``atrix}$0
+endsnippet
+
+priority 2000000
+context block_math(context)
+snippet `rv([1-9])` "row vector" iA
+\begin{bmatrix}``
+    rv=gen_matrix(1,m[1],1);
+``\end{bmatrix}
+endsnippet
+
+priority 2000000
+context block_math(context)
+snippet `cv([1-9])` "row vector" iA
+\begin{bmatrix}``
+    rv=gen_matrix(m[1],1,1);
+``\end{bmatrix}
+endsnippet
+
+# inline matrices
+
+priority 3000
+context inline_math(context)
+snippet `(bm|pm|m|vm)at([1-9])([1-9])` "matrix" iA
+\begin{``rv = m[1]``atrix}``
+rv = gen_matrix(m[2],m[3],0);
+`` \end{``rv = m[1]``atrix}$0
+endsnippet
+
+priority 3000000
+context inline_math(context)
+snippet `rv([1-9])` "row vector" iA
+\begin{bmatrix}``
+    rv=gen_matrix(1,m[1],0);
+`` \end{bmatrix}
+endsnippet
+
+priority 3000000
+context inline_math(context)
+snippet `cv([1-9])` "row vector" iA
+\begin{bmatrix}``
+    rv=gen_matrix(m[1],1,0);
+`` \end{bmatrix}
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                dots                                                 \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+context math(context)
+snippet ... "cdots" iA
+\cdots
+endsnippet
+
+context math(context)
+snippet ,,, "vdots" iA
+\vdots
+endsnippet
+
+context math(context)
+snippet ::: "ddots" iA
+\ddots
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\              script text                                           \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# _{}
+context math(context)
+snippet `(?<!(math|\\))sc` "script main" iA
+_{$1}$0
+endsnippet
+
+# _{1}
+priority 10000
+context math(context)
+snippet `(?<=[A-Za-z])(?<!mat)(\d)` "auto subscript" iA
+_``rv = m[1]``
+endsnippet
+
+# _{1}
+priority 10000
+context math(context)
+snippet `(?<=\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega))[ ](\d)` "auto subscript" iA
+_``rv = m[2]``
+endsnippet
+
+
+# _{a}
+priority 1000
+context math(context)
+snippet `(?<=[A-Za-z])(aa|bb|cc|ii|jj|kk|ll|mm|nn|oo|pp|qq|ss|tt|uu|vv|ww|xx|yy|zz)` "script" iA
+_``
+var as=m[1];
+var bs=as.charAt(0);
+rv=bs
+``
+endsnippet
+
+# α_{a}
+priority 1000
+context math(context)
+snippet `(?<=\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega))[ ](\d|aa|bb|cc|ii|jj|kk|mm|nn|tt|uu|vv|ww|xx|yy|zz)` "greek subscript" iA
+_``var as=m[2];
+var bs=as.charAt(0);
+rv=bs``
+endsnippet
+
+# _{12}
+context math(context)
+snippet `(?<=[A-Za-z]_)([\d]+)` "auto subscript2" iA
+{``rv = m[1]``$1}$0
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                square                                             \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# ^{}
+
+priority 1000
+context math(context)
+snippet `(?<!\\)pw` "^n" iA
+^{$1}$0
+endsnippet
+
+# ^2
+
+context math(context)
+snippet `(?<!\\)sr` "^2" iA
+^2 
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\              fraction                                             \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+# 1/->\frac{1}{}
+
+priority 10
+context math(context)
+snippet `((\d+)|(\d*)(\\)?([A-Za-z]+)((\^|_)(\{\d+\}|\d))*|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])/` "Fraction no ()" A
+\frac{``rv = m[1]``}{$1}$0
+endsnippet
+
+context math(context)
+snippet `^.*\)/` "Fraction with ()" A
+``
+    let str = m[0];
+    str = str.slice(0, -1);
+    let lastIndex = str.length - 1;
+
+    let depth = 0;
+    let i = str.length - 1;
+
+    while (true) {
+        if (str[i] == ')') depth += 1;
+        if (str[i] == '(') depth -= 1;
+        if (depth == 0) break;
+        i -= 1;
+    }
+
+    let results = str.slice(0, i) + "\\frac{" + str.slice(i+1, -1) + "}";
+    results += "{$1}$0";
+    rv = results;
+``
+endsnippet
+
+# //->\frac{}{}
+
+priority 10
+context math(context)
+snippet // "Fraction" iA
+\\frac{$1}{$2}$0
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\\\                      sign                              \\\\\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+## integrate signs ∫ ##
+
+# ∫
+priority 1
+context math(context)
+snippet `(?<=[^s])(?<!\\)[iI]nt` "integration" iAM
+\int
+endsnippet
+
+# ∫∫
+priority 2
+context math(context)
+snippet `(\\|)iint` "iintegration" iA
+\iint
+endsnippet
+
+# ∫∫∫
+priority 100000
+context math(context)
+snippet `(\\|)iiint` "iiintegration" iA
+\iiint
+endsnippet
+
+# ∮
+priority 200000
+context math(context)
+snippet `(\\|)oint` "oint" iA
+\oint
+endsnippet
+
+# ∯
+priority 200000
+context math(context)
+snippet `(\\|)oiint` "oint" iA
+\oiint
+endsnippet
+
+# ∰
+priority 200000
+context math(context)
+snippet `(\\|)oiiint` "oint" iA
+\oiiint
+endsnippet
+
+
+# ∫a -> ∫ a
+context math(context)
+snippet `(?<=(\\int|\\lim|\\sum))([a-ce-zA-CE-Z])` "space after int" iA
+ ``rv=m[2]``
+endsnippet
+
+
+## infinity ∞ ##
+
+context math(context)
+snippet `oo` "infinity" iA
+\infty
+endsnippet
+
+context math(context)
+snippet `\\inftyp` "+infty" iA
++\infty
+endsnippet
+
+context math(context)
+snippet `\\inftym` "-infty" iA
+-\infty
+endsnippet
+
+## d/dt
+
+context math(context)
+snippet `DD` "diffraction" iA
+\frac{\mathrm{d}$1}{\mathrm{d}$2}
+endsnippet
+
+context math(context)
+snippet `PP` "diffraction" iA
+\frac{\partial $1}{\partial $2}
+endsnippet
+
+## Fourier Trans 1/(√2π) ∫
+
+context math(context)
+snippet \frt "fourier trans" iA
+\frac{1}{sqrt{2\pi}}\int_{-\infty}^{+\infty}
+endsnippet
+
+## function and operator ##
+context math(context)
+snippet `(?<!arc)(?<!\\)(sin|cos|tan|csc|sec|cot|ln|log|det|ker|max|min)` "function" iA
+\``rv=m[1]`` 
+endsnippet
+
+context math(context)
+snippet `(?<!\\)(lim|sum)` "lim" iA
+\``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(?<!\\)arc(sin|cos|tan|csc|sec|cot)` "function" iA
+\arc``rv=m[1]`` 
+endsnippet
+
+priority 20
+context math(context)
+snippet `(?<=\\(sin|cos|tan|csc|sec|cot))( )h` "function" iA
+h 
+endsnippet
+
+context math(context)
+snippet `(curl|div|grad)` "vec calculus" iA
+\mathrm{``rv=m[1].charAt(0).toUpperCase()+m[1].substr(1)``.}
+endsnippet
+
+context math(context)
+snippet `(?<!\\)exp` "exp" iA
+\mathrm{e}^{$1}$0
+endsnippet
+
+context math(context)
+snippet `(?<!\\)sq` "square" iA
+\sqrt{$1}
+endsnippet
+
+context math(context)
+snippet `(sum|int|bigcap|bigcup)d` "sum and int" iA
+``rv=m[1]``_{$1}^{$2}
+endsnippet
+
+context math(context)
+snippet `(lim|limsup|liminf)d` "lim and limsup" iA
+``rv=m[1]``_{$1 \to $2}$0
+endsnippet
+
+context math(context)
+snippet `\\(lim|limsup|sum|int|iint|iiint|oint|oiint|oiiint|bigcap|bigcup)D` "displaystyle" iA
+\displaystyle \``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(\|\||abs)` "abs" iA
+|$1|$0
+endsnippet
+
+## Dirac Bracket <φ|ψ> ##
+
+context math(context)
+snippet `avg` "average" iA
+\left< $1 \right> $0
+endsnippet
+
+context math(context)
+snippet `[bB]ra` "Dirac bra" iA
+\langle $1|$0
+endsnippet
+
+context math(context)
+snippet `(?<=(\||\| ))ket` "dirac ket" iA
+$1\rangle$0
+endsnippet
+
+context math(context)
+snippet `(?<!(\||\| ))[kK]et` "Dirac bra" iA
+|$1\rangle$0
+endsnippet
+
+## signs ##
+
+context math(context)&& !isAlignedEnvironment(editor)
+snippet `==` "xlongequal" iA
+\xlongequal{$1}$0
+endsnippet
+
+context math(context)
+snippet `AA` "forall" iA
+\forall 
+endsnippet
+
+context math(context)
+snippet `EE` "exist" iA
+\exist 
+endsnippet
+
+context math(context)
+snippet `RR` "rset" iA
+\mathbb{R}
+endsnippet
+
+context math(context)
+snippet `ZZ` "integer set" iA
+\mathbb{Z}
+endsnippet
+
+context math(context)
+snippet `CC` "integer set" iA
+\mathbb{C}
+endsnippet
+
+priority 20
+context math(context)
+snippet `OO` "cdot" iA
+\cdot 
+endsnippet
+
+context math(context)
+snippet `BB` "cdot" iA
+\boxed{${1:``rv=selectedText;selectedText=""``}}$0
+endsnippet
+
+context math(context)
+snippet `TT` "->" iA
+\rightarrow 
+endsnippet
+
+context math(context)
+snippet `GG` "==>" iA
+\Longrightarrow
+endsnippet
+
+priority 10
+context math(context)
+snippet `@@` "at" iA
+\big| _{$1}^{$2}$0
+endsnippet
+
+priority 20
+context math(context)
+snippet `#@` "at2" iA
+\left. $1 \right|_{$2}$0
+endsnippet
+
+context math(context)
+snippet `NN` "cap" iA
+\cap 
+endsnippet
+
+context math(context)
+snippet `UU` "cup" iA
+\cup 
+endsnippet
+
+context math(context)
+snippet `II` "in" iA
+\in 
+endsnippet
+
+priority 20
+context math(context)
+snippet `XX` "times" iA
+\times 
+endsnippet
+
+context math(context)
+snippet `oxo` "otimes" iA
+\otimes 
+endsnippet
+
+context math(context)
+snippet `opo` "oplus" iA
+\oplus 
+endsnippet
+
+context math(context)
+snippet `oco` "oplus" iA
+\propto 
+endsnippet
+
+# ▽
+context math(context)
+snippet `(\\|)(nbl)` "nabla" iA
+\nabla 
+endsnippet
+
+context math(context)
+snippet `(?<!\\)dag` "dagger" iA
+^\dagger
+endsnippet
+
+context math(context)
+snippet `coj` "conjugate" iA
+^*
+endsnippet
+
+context math(context)
+snippet `(\\|)ptl` "partial" iA
+\partial 
+endsnippet
+
+context math(context)
+snippet `inv` "inverse" iA
+^{-1}
+endsnippet
+
+context math(context)
+snippet `trs` "trs" iA
+^T
+endsnippet
+
+context math(context)
+snippet `~~` "sim" iA
+\sim
+endsnippet
+
+## ℝ ##
+
+priority 2000000
+context math(context)
+snippet `(?<=\\mathbb\{R\})([mnkl\d])` "rset^n" iA
+^{``rv=m[1]``} 
+endsnippet
+
+priority 2000000
+context math(context)
+snippet `(?<=\\mathbb\{R\})\+` "rset_+" iA
+_+
+endsnippet
+
+context math(context)
+snippet `\!=` "not =" iA
+\not =
+endsnippet
+
+context math(context)
+snippet `(?<!\\)(txt|tst)` "text" iA
+\text{$1}$0
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                prefix                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+priority 1000
+context math(context)
+snippet `((\\?[a-zA-Z^h]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(bar|BAR)` "Bar" iA
+\overline{``rv = m[1]``}
+endsnippet
+
+priority 2000
+context math(context)
+snippet `hbar` "hbar" iA
+\hbar
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(td|TD)` "tilde" iA
+\widetilde{``rv = m[1]``}
+endsnippet
+
+priority 100
+context math(context)
+snippet `((\\?[a-ce-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(?<!math)(rm)` "tilde" iA
+\mathrm{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `@rm` "mathrm" iA
+\mathrm{$1}$0
+endsnippet
+
+priority 200
+context math(context)
+snippet `(.?)drm` "dif" iA
+``rv=m[1]=="$"? "$" : m[1]+" "``\mathrm{d}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(hat|HAT)` "hat" iA
+\hat{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `(\\?[a-zA-Z]\w*)(?<![\\|s])(cr)` "hat" iA
+\mathscr{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-hk-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(bav|BAV|base|BASE)` "base" iA
+\hat{\boldsymbol{``rv = m[1]``}}
+endsnippet
+
+context math(context)
+snippet `(i|j)(bav)` "ijbase" iA
+\hat{\boldsymbol{\``rv=m[1]``math}}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(vec|VEC)` "vec" iA
+\vec{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(bm)` "bm" iA
+\boldsymbol{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(?<!math)(bf)` "bf" iA
+\mathbf{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(?<!math)(cal)` "mathcal" iA
+\mathcal{``rv = m[1]``}
+endsnippet
+
+priority 10
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(dot)` "mathcal" iA
+\dot{``rv = m[1]``}
+endsnippet
+
+priority 15
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(ddot)` "mathcal" iA
+\ddot{``rv = m[1]``}
+endsnippet
+
+priority 15
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(vdot)` "mathcal" iA
+\dot{\boldsymbol{``rv = m[1]``}}
+endsnippet
+
+priority 20
+context math(context)
+snippet `((\\?[a-zA-Z]\w*)|\\(mu|alpha|sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Xi|xi|Pi|sigma|varsigma|Upsilon|Phi|Psi|Omega)[ |])(vddot)` "mathcal" iA
+\ddot{\boldsymbol{``rv = m[1]``}}
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                letter                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+priority 200000
+context math(context)
+snippet `(\\|)(mu|alpha|Sigma|varsigma|rho|beta|gamma|delta|zeta|eta|epsilon|varepsilon|theta|iota|kappa|vartheta|lambda|nu|pi|varpi|rho|tau|upsilon|phi|varphi|chi|psi|omega|Gamma|Delta|Theta|Lambda|Pi|sigma|Upsilon|Phi|Psi|Omega)` "greek" iA
+\``rv=m[2]`` 
+endsnippet
+
+context math(context)
+snippet `ksi` "xi" iA
+\xi 
+endsnippet
+
+context math(context)
+snippet `gma` "gamma" iA
+\gamma
+endsnippet
+
+context math(context)
+snippet `Gma` "gamma" iA
+\Gamma
+endsnippet
+
+context math(context)
+snippet `dlt` "delta" iA
+\delta 
+endsnippet
+
+context math(context)
+snippet `(DA|Dlt)` "Delta" iA
+\Delta 
+endsnippet
+
+priority 1000
+context math(context)
+snippet `(\\|)(var|)eps` "epsilon" iA
+\``rv=m[2]``epsilon 
+endsnippet
+
+priority 1000
+context math(context)
+snippet `(\\|)ups` "upsilon" iA
+\upsilon 
+endsnippet
+
+context math(context)
+snippet `kpa` "kappa" iA
+\kappa 
+endsnippet
+
+context math(context)
+snippet `lbd` "lambda" iA
+\lambda 
+endsnippet
+
+context math(context)
+snippet `Lbd` "Lambda" iA
+\Lambda 
+endsnippet
+
+context math(context)
+snippet `omg` "omega" iA
+\omega 
+endsnippet
+
+context math(context)
+snippet `Omg` "Omega" iA
+\Omega 
+endsnippet
+
+context math(context)
+snippet `\\(epsilon|phi|pi|sigma|theta)(| )var` "var greek" iA
+\var``rv=m[1]``
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                arrows                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+priority 10
+context math(context)
+snippet `(|\\)(r|R)arr` "-> & =>" iA
+\``rv=m[2]``ightarrow
+endsnippet
+
+priority 10
+context math(context)
+snippet `(|\\)(l|L)arr` "-> & =>" iA
+\``rv=m[2]``eftarrow
+endsnippet
+
+priority 10
+context math(context)
+snippet `(|\\)(u|U)arr` "-> & =>" iA
+\``rv=m[2]``parrow
+endsnippet
+
+priority 10
+context math(context)
+snippet `(|\\)(d|D)arr` "-> & =>" iA
+\``rv=m[2]``ownarrow
+endsnippet
+
+priority 20
+context math(context)
+snippet `(r|R)rarr` "-->" iA
+\``rv=m[1]=="r"?"l":"L"``ongrightarrow 
+endsnippet
+
+priority 20
+context math(context)
+snippet `llarr` "<--" iA
+\longleftarrow 
+endsnippet
+
+priority 30
+context math(context)
+snippet `lrarr` "<->" iA
+\leftrightarrow 
+endsnippet
+
+priority 30
+context math(context)
+snippet `udarr` "<->" iA
+\updownarrow 
+endsnippet
+
+context math(context)
+snippet `FF` "<>" iA
+\Leftrightarrow 
+endsnippet
+
+context math(context)
+snippet `<>` "<>" iA
+\Longleftrightarrow 
+endsnippet
+
+priority 10
+context math(context)
+snippet `>=` ">=" iA
+\geq 
+endsnippet
+
+priority 10
+context math(context)
+snippet `<=` "<=" iA
+\leq 
+endsnippet
+
+context math(context)
+snippet `<<` "<<" iA
+\ll 
+endsnippet
+
+context math(context)
+snippet `>>` "<<" iA
+\gg 
+endsnippet
+
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+# \\                colors                                                \\
+# \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+context math(context)
+snippet `\\(red|green|blue)` "useful color" iA
+{\color{``rv=m[1]``}${1:``rv=VISUAL()``}}$0
+endsnippet
