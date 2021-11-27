@@ -110,10 +110,27 @@ endsnippet
 # \frac \dfrac
 
 context math(context)
-snippet `(\\dfrac|\\frac)\{(.+)\}\{(.+)};` "change ->" Ai
+snippet `(\\(frac|dfrac)\{.*\}\{.*\});` "frac change" iA
 ``
-var frc = (m[1]=="\\dfrac")? "\\frac":"\\dfrac";
-rv = frc+"{" + m[2].replace(/\}/g, '\\}') + "}{" + m[3].replace(/\}/g, '\\}') + "}"
+var str=m[1].replace(/\\frac/g,"Ⱆ").replace(/\\dfrac/,"Ⱉ").split('');
+
+var depth=0;
+var i=str.length-1;
+var test =0;
+
+while (i>=0) {
+    if ( str[i] == '\}' ) depth ++;
+    if ( str[i] == '\{' ) depth --;
+    
+    if ( test == 2 && !depth){
+        if ( str[i] == 'Ⱆ'){ str[i] = 'Ⱉ';break;}
+        if ( str[i] == 'Ⱉ'){ str[i] = 'Ⱆ';break;}
+    }
+    test += depth ? 0 : 1;
+    i--;
+}
+
+rv=str.join('').replace(/Ⱆ/g,"\\frac").replace(/Ⱉ/,"\\dfrac");
 ``
 endsnippet
 
