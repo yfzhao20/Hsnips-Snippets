@@ -1,0 +1,1678 @@
+##########################################
+#                                        #
+#    HyperSnips snippets for markdown    #
+#                                        #
+#       2022/01/06   @yf-zhao            #
+#                                        #
+#        For Hypersnips 0.2.7+           #
+#                                        #
+#                                        #
+##########################################
+
+#### Index ####
+
+# 0  Global Function
+# 1  Special snippets
+# 2  block & environment
+# 3  Math Notation
+# 4  Greek letter
+# 5  Matrices
+# 6  Fraction
+# 7  Superscript & subscript
+# 8  prefix Mode
+# 9  Unit Mode
+# 10 Other Environment
+# 11 Transform similar notations
+# 12 for Special Courses
+# 13 Other notations & commands
+# 14 lint
+# 15 Temp
+# 16 Trash
+
+
+
+#### Global JavaScript Function ####
+
+global
+
+// vscode api (necessary)
+
+        const vscode = require("vscode");
+        let editor=vscode.window.activeTextEditor
+        let document=editor.document
+
+
+        // get ActiveTextEditor
+
+        vscode.window.onDidChangeActiveTextEditor((e) => {
+            editor=vscode.window.activeTextEditor;
+            document=editor.document
+        });
+
+        // show time in StatusBar
+
+        setInterval(function(){myTimer()},1000);
+        function myTimer(){
+            vscode.window.setStatusBarMessage(new Date().toLocaleTimeString());
+        }
+
+// selected text : use ``rv=visual();`` to get selected text
+
+    let selectedText = "";
+
+    vscode.window.onDidChangeTextEditorSelection((e) => {
+        const newSelectedText = e.textEditor.document.getText(e.selections[0]);
+        if (newSelectedText) {
+            selectedText = newSelectedText.replace(/\\/g,"\\\\");
+        }
+    });
+
+    function visual(){
+        const visualText = selectedText;
+        selectedText = "";
+        return visualText;
+    }
+
+// generate matrix : use ``rv = gen_matrix(snip, "p" , 2 , 3 , 1)`` to get a 2*3 display pmatrix
+             //   snip : snip varible
+             //   flag : string. 'p', 'b' , 'B' , 'v' , 'V' ,'' . default value = ''
+             //   nrow : int.    row of matrix
+             //   ncol : int.    column of matrix
+             //   index: int.    '\n' or '' for last char of line.  1:'\n' ; 0: ''.
+
+    function gen_matrix(snip,flag, nrow, ncol, index) {
+    	let results = "\\\\begin{"+`${flag?flag:''}`+"matrix}";
+    	let order = 1;
+        let lf = index ? "\n" : "";
+    	for (let i=0; i<nrow; i++){
+            results += (lf + "  ");
+    		for(let j = 0;j <ncol;j++){
+    			results += `${snip.tabstop(order)}` + ((j == ncol -1) ?  " \\\\\\\\" : " & ");
+    			order ++;
+    		}
+    	}
+    	return results += (lf +"\\\\end{"+`${flag?flag:''}`+"matrix}");
+    }
+
+
+// transformation cycle
+
+    function cycle(arr,str){
+        let count = 0 ;
+        while (str!=arr[++count] && count<arr.length);
+        return arr[(count+1)%arr.length];
+    }
+
+
+
+// Context definition
+
+    // math
+
+        function math(context) {
+            return context.scopes.some(s => s.includes("math"));
+        }
+
+    // inline & block math
+
+        function inline_math(context){
+            return context.scopes.some(s => s.includes("math.inline"));
+        }
+
+        function block_math(context){
+            return context.scopes.some(s => s.includes("math.block")) || context.scopes.some(s => s.includes("math.display"));
+        }
+
+    // {aligned} environment
+
+        function isAlignedEnvironment(editor) {
+            let text = editor.document.getText(new vscode.Range(new vscode.Position(0, 0), editor.selection.start));
+            const reg = /\\begin\{aligned\}[^\$]*?\\end\{aligned\}/g;
+            text = text.replace(reg, '');
+            return (text.indexOf('\\begin{aligned}') == -1)?false:true;
+        }
+
+
+    // Unit Environment
+
+        function isUnitMode(editor) {
+            let pos = editor.selection.active;
+            const reg = /\\mathrm\{\\,[^\$]*?\}/g;
+            let text = editor.document.getText(new vscode.Range(pos.line,0,pos.line,pos.character)).replace(reg, '');
+            return (text.indexOf('\\mathrm{\\,') != -1)
+        }
+
+// Dic
+
+    // Greek Letter
+
+    const greek  = {
+            "a" : "\\alpha",
+            "b" : "\\beta",
+            "c" : "\\chi",
+            "d" : "\\delta",
+            "e" : "\\epsilon",
+            "ve": "\\varepsilon",
+            "f" : "\\phi",
+            "vf" : "\\varphi",
+            "g" : "\\gamma",
+            "h" : "\\eta",
+            "i" : "\\iota",
+            "j" : "\\varphi",
+            "k" : "\\kappa",
+            "vk": "\\varkappa",
+            "l" : "\\lambda",
+            "m" : "\\mu",
+            "n" : "\\nu",
+            "o" : "\\omicron",
+            "p" : "\\pi",
+            "vp" : "\\varpi",
+            "q" : "\\theta",
+            "vq" : "\\vartheta",
+            "r" : "\\rho",
+            "s" : "\\sigma",
+            "vs" : "\\varsigma",
+            "t" : "\\tau",
+            "u" : "\\upsilon",
+            "v" : "\\varpi",
+            "w" : "\\omega",
+            "x" : "\\xi",
+            "y" : "\\psi",
+            "z" : "\\zeta",
+            "A" : "\\Alpha",
+            "B" : "\\Beta",
+            "C" : "\\Chi",
+            "D" : "\\Delta",
+            "E" : "\\Epsilon",
+            "F" : "\\Phi",
+            "G" : "\\Gamma",
+            "H" : "\\Eta",
+            "I" : "\\Iota",
+            "K" : "\\Kappa",
+            "L" : "\\Lambda",
+            "M" : "\\Mu",
+            "N" : "\\Nu",
+            "O" : "\\Omicron",
+            "P" : "\\Pi",
+            "Q" : "\\Theta",
+            "R" : "\\Rho",
+            "S" : "\\Sigma",
+            "T" : "\\Tau",
+            "U" : "\\Upsilon",
+            "W" : "\\Omega",
+            "X" : "\\Xi",
+            "Y" : "\\Psi",
+            "Z" : "\\Zeta"
+        };
+
+    // prefix
+
+    const prefix = {
+        "bar" : ["\\\\overline{"             ,"}"   ],
+        "fn"  : ["\\\\overset{\\\\frown}{"   ,"}"   ],
+        "td"  : ["\\\\widetilde{"            ,"}"   ],
+        "rm"  : ["\\\\mathrm{"               ,"}"   ],
+        "hat" : ["\\\\hat{"                  ,"}"   ],
+        "cr"  : ["\\\\mathscr{"              ,"}"   ],
+        "bav" : ["\\\\hat{\\\\boldsymbol{"   ,"}}"  ],
+        "vec" : ["\\\\vec{"                  ,"}"   ],
+        "bm"  : ["\\\\boldsymbol{"           ,"}"   ],
+        "bf"  : ["\\\\mathbf{"               ,"}"   ],
+        "cal" : ["\\\\mathcal{"              ,"}"   ],
+        "dot"  : ["\\\\dot{"                  ,"}"   ],
+        "vdot" : ["\\\\dot{\\\\boldsymbol{"   ,"}}"  ]
+    }
+
+    //  block
+
+
+    const block = {
+        "tm" : ["Thm"        ,"brown"  ,"▶",0],
+        "tt" : ["Thm"        ,"brown"  ,"▶",1],
+        "ex" : ["Ex"         ,"teal"   ,"▶",0],
+        "pf" : ["Pf"         ,"green"  ,"▶",0],
+        "pb" : ["Problem"    ,"teal"   ,"▶",0],
+        "sn" : ["Sol"        ,"green"  ,"▶",0],
+        "df" : ["Def"        ,"purple" ,"▶",0],
+        "dd" : ["Def"        ,"purple" ,"▶",1],
+        "st" : ["Step"       ,"orange" ,"▶",0],
+        "md" : ["Method"     ,"brown"  ,"■",0],
+        "cc" : ["Case"       ,"brown"  ,"●",0],
+        "ds" : ["Discussion" ,"brown"  ,"■",0],
+    }
+
+    const arrow = {
+        'r' : 'right',
+        'R' : 'Right',
+        'l' : 'left',
+        'L' : 'Left',
+        'lr':'leftright',
+        'Lr':'Leftright',
+        'u' : 'up',
+        'U' : 'Up',
+        'd' : 'down',
+        'D': 'Down',
+        'ud':'updown',
+        'Ud':'Updown',
+        'rr': 'longright',
+        'll': 'longleft',
+        'RR': 'Longright',
+        'LL': 'Longleft',
+        'se': 'se',
+        'sw': 'sw',
+        'ne': 'ne',
+        'nw': 'nw'
+    }
+
+
+///////////////////// trash  ////////////////////
+
+// autoclosing environment
+
+function autoclosing(){
+    let pos=editor.selection.active;
+    let text = document.getText(document.lineAt(pos).range).charAt(pos.character+1);
+    let reg=/[;:.,=\}\]\)>\\` \n\t\$*\|\\]/g;
+    return reg.test(text) || text==""
+}
+
+endglobal
+
+
+
+
+##########################################################
+#                       Test                             #
+##########################################################
+################### Only for Test !!! ####################
+
+##########################################################
+#                   special snippets                     #
+##########################################################
+
+# protect "oiint" "iiint" "asccos" "mathtt" "mathbb"
+priority 99999999
+context math(context)
+snippet `(?<=(oii|iii|ascc|mathtt|mathbb|hetan))` "prevent" iA
+
+endsnippet
+
+# \displaystyle in `inline-math`
+
+context inline_math(context)
+snippet `\$([^\$]*)DS` "Displaystyle" iA
+``rv=`$\\\\displaystyle${m[1]? " "+m[1] : ""}```
+endsnippet
+
+
+##########################################################
+#            block & environment  (Theorem,etc.)         #
+##########################################################
+
+# vtm ⇨ (▶Thm.)
+# vdt ⇨ <details>▮</details>
+#
+# use `block` dictionary
+
+context !math(context)
+snippet `v(tm|tt|ex|pf|pb|sn|df|dd|st|md|ds|cc)` "block & environment" iA
+``
+let res = block[m[1]];
+rv=`$\{\\\\color{${res[1]}}\\\\mathbf{${res[2]}\\\\ ${res[0]} .${snip.tabstop(1)}}}$ ${res[3]?`(**${snip.tabstop(2)}**) `:""}`;
+``
+endsnippet
+
+
+context !math(context)
+snippet `vdt` "detail" wA
+<details>
+<summary>
+
+$1
+
+</summary>
+
+$2
+
+</details>
+$0
+endsnippet
+
+
+
+
+##########################################################
+#                     Math Notation                      #
+##########################################################
+
+#### dots
+#
+# ... ⇨ \cdots
+# ,,, ⇨ \vdots
+# ... ⇨ \ddots
+
+context math(context)
+snippet `\.\.\.` "cdots" iA
+``rv='\\cdots '``
+endsnippet
+
+context math(context)
+snippet `,,,` "vdots" iA
+``rv='\\vdots '``
+endsnippet
+
+context math(context)
+snippet `:::` "ddots" iA
+``rv='\\ddots '``
+endsnippet
+
+#### integral  & Big Operators
+#
+# int   ⇨ \int   ║ ∫
+# iint  ⇨ \iint  ║ ∫∫
+# iiint ⇨ \iiint ║ ∫∫∫
+# oint  ⇨ \oint  ║ ∮
+# oiint ⇨ \oiint ║ ∯
+
+priority 10
+context math(context)
+snippet `(?<=[^s])(?<!\\)[iI]nt` "int" iAM
+\\int
+endsnippet
+
+priority 20
+context math(context)
+snippet `[\\]?iint` "iint" iA
+\\iint
+endsnippet
+
+priority 100000
+context math(context)
+snippet `[\\]?iiint` "iiint" iA
+\\iiint
+endsnippet
+
+priority 200000
+context math(context)
+snippet `(?<!\\)oint` "oint" iA
+\\oint
+endsnippet
+
+priority 200000
+context math(context)
+snippet `[\\]?oiint` "oiint" iA
+\\oiint
+endsnippet
+
+# lim      ⇨ \lim
+# sum      ⇨ \sum
+# intd     ⇨ int_{▮}^{▮}
+# limd     ⇨ lim_{▮ \to ▮}
+# \inta     ⇨ \int a
+# \lim sup ⇨ \limsup
+
+context math(context)
+snippet `(?<!\\)(lim|sum)` "lim" iA
+\\``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(lim|limsup|liminf)d` "lim and limsup" iA
+``rv=m[1]``_{$1 \\to $2}$0
+endsnippet
+
+context math(context)
+snippet `(int|bigcap|bigcup|sum)d` "sum and int" iA
+``rv=m[1]``_{$1}^{$2}
+endsnippet
+
+context math(context)
+snippet `(?<=\\lim)[ ]?(inf|sup)` "limsup&liminf" iA
+``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(int|\\lim|\\sum)([a-ce-zA-CE-Z])` "space after int" iA
+``rv=m[1]+" "+m[2]``
+endsnippet
+
+#### infinity
+#
+# oo      ⇨ \infty
+# \inftyp ⇨ +\infty (oop ⇨ infty)
+# \inftym ⇨ -\infty (oom ⇨ infty)
+
+context math(context)
+snippet `oo` "infinity" iA
+\\infty
+endsnippet
+
+context math(context)
+snippet `\\inftyp` "+infty" iA
++\\infty
+endsnippet
+
+context math(context)
+snippet `\\inftym` "-infty" iA
+-\\infty
+endsnippet
+
+#### derivative & partial derivative
+#
+# DD  ⇨ \frac{\mathrm{d}▮}{\mathrm{d}▮}  ║ 𝗱▮/𝗱▮
+# PP  ⇨ \frac{\partial ▮}{\partial ▮}    ║ ∂▮/∂▮
+# drm ⇨ \mathrm{\,d}                      ║  𝗱        ║ `priority 200` for ×⇨ \overline{h}
+# ptl ⇨ \partial                          ║  ∂
+
+context math(context)
+snippet `DD` "diffraction" iA
+\\frac{\\mathrm{d}$1}{\\mathrm{d}$2}
+endsnippet
+
+context math(context)
+snippet `PP` "partial diffraction" iA
+\\frac{\\partial $1}{\\partial $2}
+endsnippet
+
+priority 200
+context math(context)
+snippet `(\w)?drm` "dif" iA
+``rv=m[1]?(m[1]+" "):""``\\mathrm{\\,d}
+endsnippet
+
+context math(context)
+snippet `ptl` "partial" iA
+``rv="\\partial "``
+endsnippet
+
+#### Arrows
+#### use `arrow` dictionary
+#
+# ra; ⇨ \rightarrow
+# ia; ⇨ \implies
+# fa; ⇨ \iff
+# to; ⇨ \to
+
+priority 10
+context math(context)
+snippet `(r|R|l|L|lr|Lr|u|U|d|D|ud|Ud|rr|ll|RR|LL|se|sw|ne|nw)a;` "arrows" iA
+``rv="\\"+arrow[m[1]]+"arrow ";``
+endsnippet
+
+context math(context)
+snippet `ia;` "implies" iA
+``rv='\\implies '``
+endsnippet
+
+context math(context)
+snippet `fa;` "iff" iA
+``rv='\\iff '``
+endsnippet
+
+context math(context)
+snippet `ta` "to" iA
+``rv='\\to '``
+endsnippet
+
+
+#### greater & less notations
+#
+# <= ⇨ \leq
+# >= ⇨ \geq
+# << ⇨ \ll
+# >> ⇨ \gg
+# >~ ⇨ \lesssim
+# <~ ⇨ \gtrsim
+
+context math(context)
+snippet `>=` "≥" iA
+``rv='\\geq '``
+endsnippet
+
+context math(context)
+snippet `<=` "≤" iA
+``rv='\\leq '``
+endsnippet
+
+context math(context)
+snippet `<<` "≪" iA
+``rv='\\ll '``
+endsnippet
+
+context math(context)
+snippet `>>` "≫" iA
+``rv='\\gg '``
+endsnippet
+
+context math(context)
+snippet `<~` "≲" iA
+``rv='\\lesssim '``
+endsnippet
+
+context math(context)
+snippet `>~` "≳" iA
+``rv='\\gtrsim '``
+endsnippet
+
+#### Square
+#
+# sq    ⇨ \sqrt{▮}
+
+context math(context)
+snippet `(?<!\\)sq` "square" iA
+\\sqrt{$1}
+endsnippet
+
+#### set notations
+#
+# RR            ⇨ \mathbb{R}     ║  ℝ
+# CC            ⇨ \mathbb{C}     ║  ℂ
+# ZZ            ⇨ \mathbb{Z}     ║  ℤ
+# \mathbb{R}+   ⇨ \mathbb{R}_+   (RR+ ⇨ ℝ⁺)
+# \mathbb{R}n   ⇨ \mathbb{R}^n   (RRn ⇨ ℝⁿ)
+# \mathbb{R}3   ⇨ \mathbb{R}^3   (RR3 ⇨ ℝ³)
+
+context math(context)
+snippet `RR|CC|ZZ` "sets" iA
+\\mathbb{``rv=m[0].charAt(0)``}
+endsnippet
+
+priority 2000000
+context math(context)
+snippet `(\\mathbb\{R\})([mnkl\d])` "rset^n" iA
+\\mathbb{R}^{``rv=m[2]``}
+endsnippet
+
+priority 2000000
+context math(context)
+snippet `(\\mathbb\{R\})\+` "rset_+" iA
+\\mathbb{R}_+
+endsnippet
+
+
+#### Standard functions
+#
+# sin   ⇨ \sin
+# \sin h ⇨ \sinh
+# arcsin ⇨ \arcsin
+# div    ⇨ \mathrm{Div.}
+
+context math(context)
+snippet `(?<!arc)(?<!\\)(sin|cos|tan|csc|sec|cot|ln|log|lg|det|ker|max|min)` "function" iA
+\\``rv=m[1]+' '``
+endsnippet
+
+context math(context)
+snippet `(?<!\\)arc(sin|cos|tan|csc|sec|cot)` "function" iA
+\\arc``rv=m[1]+' '``
+endsnippet
+
+priority 20
+context math(context)
+snippet `(?<=\\(sin|cos|tan|csc|sec|cot))( )h` "function" iA
+``rv='h '``
+endsnippet
+
+context math(context)
+snippet `curl|div|grad` "vec calculus" iA
+\\mathrm{``rv=m[0].charAt(0).toUpperCase()+m[0].substr(1)``.}
+endsnippet
+
+
+#### Binary Operation & Relation Symbols
+#
+# == ⇨ \equiv   ║     ≡
+# OO ⇨ \cdot    ║     ·
+# ~~ ⇨ \sim     ║     ~
+# NN ⇨ \cap     ║     ∩
+# UU ⇨ \cup     ║     ∪
+# II ⇨ \in      ║     ∈
+# XX ⇨ \times   ║     ×
+# opo ⇨ \oplus  ║     ⊕
+# oxo ⇨ \otimes ║     ⊗
+# omo ⇨ \ominus ║     ⊖
+# oco ⇨ \propto ║     ∝
+
+
+
+context math(context) && !isAlignedEnvironment(editor)
+snippet `==` "xlongequal" iA
+\\equiv``rv=' '``
+endsnippet
+
+context math(context)
+snippet `OO` "cdot" iA
+\\cdot``rv=' '``
+endsnippet
+
+context math(context)
+snippet `~~` "sim" iA
+\\sim``rv=' '``
+endsnippet
+
+context math(context)
+snippet `NN` "cap" iA
+\\cap``rv=' '``
+endsnippet
+
+context math(context)
+snippet `UU` "cup" iA
+\\cup``rv=' '``
+endsnippet
+
+context math(context)
+snippet `II` "in" iA
+\\in``rv=' '``
+endsnippet
+
+context math(context)
+snippet `XX` "times" iA
+\\times``rv=' '``
+endsnippet
+
+context math(context)
+snippet `opo` "oplus" iA
+\\oplus``rv=' '``
+endsnippet
+
+context math(context)
+snippet `omo` "oplus" iA
+\\ominus``rv=' '``
+endsnippet
+
+context math(context)
+snippet `oxo` "otimes" iA
+\\otimes``rv=' '``
+endsnippet
+
+context math(context)
+snippet `oco` "oplus" iA
+\\propto``rv=' '``
+endsnippet
+
+
+#### other operators and notations
+#
+# nbl ⇨ \nable          ║   ▽
+# AA  ⇨ \forall         ║   ∀
+# EE  ⇨ \exist          ║   ∃
+# abs ⇨ \left|▮\right|
+# ||  ⇨ \left|▮\right|
+# VV  ⇨ \times 10^{▮}  ║   ×10▘
+# !=  ⇨ \not =          ║   ≠
+
+context math(context)
+snippet `(\\?)(nbl)` "nabla" iA
+``rv='\\\\nabla '``
+endsnippet
+
+context math(context)
+snippet `AA` "forall" iA
+\\forall``rv=' '``
+endsnippet
+
+context math(context)
+snippet `EE` "exist" iA
+\\exist``rv=' '``
+endsnippet
+
+context math(context)
+snippet `(\|\||abs)` "abs" iA
+\\left|$1\\right|$0
+endsnippet
+
+context math(context)
+snippet `(?<=(\$)?)VV` "*10^{}" iA
+``rv=m[1]?"":"\\\\times "``10^{$1}$0
+endsnippet
+
+context math(context)
+snippet `\!=` "not =" iA
+\\not =
+endsnippet
+
+
+
+
+#########################################################
+#                      Greek letter                     #
+#########################################################
+
+#### Greek letter
+#### use `greek` dictionary
+#
+# alpha ⇨ \alpha ║ α
+# a;    ⇨ \alpha ║ α
+
+context math(context)
+snippet `[\\]?(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta)` "greek" iA
+\\``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(?<![a-zA-Z])([a-zA-IK-UW-Z]|v[efkpqs]);` "greek" iA
+``rv=greek[m[1]];``
+endsnippet
+
+#### special Greek letters
+
+# ksi ⇨ \xi
+# gma ⇨ \gamma
+# Gma ⇨ \Gamma
+# dlt ⇨ \delta
+# tha ⇨ \theta
+# Tha ⇨ \Theta
+# Da  ⇨ \Delta
+# Dlt ⇨ \Delta
+
+context math(context)
+snippet `ksi` "xi" iA
+\\xi
+endsnippet
+
+context math(context)
+snippet `gma` "gamma" iA
+\\gamma
+endsnippet
+
+context math(context)
+snippet `Gma` "Gamma" iA
+\\Gamma
+endsnippet
+
+context math(context)
+snippet `dlt` "delta" iA
+\\delta
+endsnippet
+
+context math(context)
+snippet `tha` "theta" iA
+\\theta
+endsnippet
+
+context math(context)
+snippet `Tha` "Theta" iA
+\\Theta
+endsnippet
+
+context math(context)
+snippet `DA|Dlt` "Delta" iA
+\\Delta
+endsnippet
+
+# eps    ⇨ \epsilon
+# vareps ⇨ \varepsilon
+# ups    ⇨ \varupsilon
+# kpa    ⇨ \kappa
+# lbd    ⇨ \lambda
+# Lbd    ⇨ \Lambda
+# nv     ⇨ \nu
+# mu     ⇨ \mu
+# omg    ⇨ \omega
+# Omg    ⇨ \Omega
+
+
+priority 1000
+context math(context)
+snippet `[\\]?(var|)eps` "epsilon" iA
+\\``rv=m[1]``epsilon
+endsnippet
+
+priority 1000
+context math(context)
+snippet `[\\]?ups` "upsilon" iA
+\\upsilon
+endsnippet
+
+context math(context)
+snippet `kpa` "kappa" iA
+\\kappa
+endsnippet
+
+context math(context)
+snippet `lbd` "lambda" iA
+\\lambda
+endsnippet
+
+context math(context)
+snippet `Lbd` "Lambda" iA
+\\Lambda
+endsnippet
+
+context math(context)
+snippet `nv` "nu" iA
+\\nu
+endsnippet
+
+context math(context)
+snippet `mv` "nu" iA
+\\mu
+endsnippet
+
+context math(context)
+snippet `omg` "omega" iA
+\\omega
+endsnippet
+
+context math(context)
+snippet `Omg` "Omega" iA
+\\Omega
+endsnippet
+
+#### var perfix
+#
+# phivar ⇨ \varphi
+
+context math(context)
+snippet `\\(epsilon|phi|pi|sigma|theta|kappa)[ ]?var` "var greek" iA
+\\var``rv=m[1]``
+endsnippet
+
+#### space after Greek letter
+#
+# \alphab ⇨ \alpha b
+
+context math(context)
+snippet `\\(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta)([a-zA-z])` "space after greek letter" iA
+``rv='\\\\'+m[1]+' '+m[2]``
+endsnippet
+
+
+
+
+#########################################################
+#                         matrices                      #
+#########################################################
+
+#### blocked math
+#
+# bmat22 ⇨
+#       \begin{bmatrix}
+#          ▮ & ▮ \\
+#          ▮ & ▮ \\
+#       \end{bmatrix}
+#
+# cv2 ⇨
+#       \begin{bmatrix}
+#          ▮ \\
+#          ▮ \\
+#       \end{bmatrix}
+#
+# rv2 ⇨
+#       \begin{bmatrix}
+#          ▮ & ▮ \\
+#       \end{bmatrix}
+
+
+priority 2000
+context block_math(context)
+snippet `([bBpvV])?mat([1-9])([1-9])` "matrix" iA
+``rv = gen_matrix(snip,m[1],m[2],m[3],1);``
+endsnippet
+
+priority 2000000
+context block_math(context)
+snippet `([bp])?rv([1-9])` "row vector" iA
+``rv = gen_matrix(snip,m[1]?m[1]:"b",1,m[2],1);``
+endsnippet
+
+priority 2000000
+context block_math(context)
+snippet `([bp])?cv([1-9])` "column vector" iA
+``rv = gen_matrix(snip,m[1]?m[1]:"b",m[2],1,1);``
+endsnippet
+
+#### inline math
+#
+# bmat22 ⇨
+#       \begin{bmatrix} ▮ & ▮ \\ ▮ & ▮ \\  \end{bmatrix}
+#
+# cv2 ⇨
+#       \begin{bmatrix} ▮ \\ ▮ \\  \end{bmatrix}
+#
+# rv2 ⇨
+#       \begin{bmatrix} ▮ & ▮ \\  \end{bmatrix}
+
+priority 2000
+context inline_math(context)
+snippet `([bBpvV])?mat([1-9])([1-9])` "matrix" iA
+``rv = gen_matrix(snip,m[1],m[2],m[3],0);``
+endsnippet
+
+priority 2000000
+context inline_math(context)
+snippet `([bp])?rv([1-9])` "row vector" iA
+``rv = gen_matrix(snip,m[1]?m[1]:"b",1,m[2],0);``
+endsnippet
+
+priority 2000000
+context inline_math(context)
+snippet `([bp])?cv([1-9])` "column vector" iA
+``rv = gen_matrix(snip,m[1]?m[1]:"b",m[2],1,0);``
+endsnippet
+
+#########################################################
+#                         fraction                      #
+#########################################################
+
+context math(context) && !isUnitMode(editor)
+snippet `//` "Fraction" iA
+\\frac{$1}{$2}$0
+endsnippet
+
+priority 10
+context math(context) && !isUnitMode(editor)
+snippet `((\d+)|(\d*)([A-Za-z]+|[a-zA-Z]?\\(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta))((\^|_)(\{\w+\}|\w)|')*)/` "Fraction " A
+\\frac{``rv = m[1]``}{$1}$0
+endsnippet
+
+
+
+
+
+
+#########################################################
+#                Superscript & Subscript                #
+#########################################################
+
+#### Superscript
+#
+# pw  ⇨ ^{▮}
+# sr  ⇨ ^2
+# 3;  ⇨ ^3
+# _3; ⇨ ^3
+# dag ⇨ ^\dagger
+# coj ⇨ ^*
+# inv ⇨ ^{-1}
+# trs ⇨ ^T
+# exp ⇨ \mathrm{e}^{▮}    ║      𝗲▘
+
+context math(context)
+snippet `(?<!\\)pw` "^n" iA
+^{$1}$0
+endsnippet
+
+context math(context)
+snippet `(?<!\\)sr` "^2" iA
+^{2}
+endsnippet
+
+context math(context)
+snippet `[_ ]?([\d]+);` "^\d" iA
+^{``rv=m[1]``}
+endsnippet
+
+context math(context)
+snippet `_([a-z]);` "^m" iA
+^``rv=m[1]``
+endsnippet
+
+context math(context)
+snippet `(?<!\\)dag` "dagger" iA
+^\\dagger``rv=' '``
+endsnippet
+
+context math(context)
+snippet `coj` "conjugate" iA
+^*
+endsnippet
+
+context math(context)
+snippet `inv` "inverse" iA
+^{-1}
+endsnippet
+
+context math(context)
+snippet `trs` "trs" iA
+^T
+endsnippet
+
+context math(context)
+snippet `(?<!\\)exp` "exp" iA
+\mathrm{e}^{$1}$0
+endsnippet
+
+
+#### Subscript
+#
+# sc        ⇨ _{▮}
+# rmm       ⇨ r_m
+# \alpha mm ⇨ \alpha _m
+# a1        ⇨ a_1
+# a_12      ⇨ a_{12}
+# a_1xx     ⇨ a_{1x}    |  ×⇨ a_1_x
+# a_x1      ⇨ a_{x1}
+# a_xyy     ⇨ a_{xy}
+
+context math(context)
+snippet `(?<!(math|\\))sc` "script main" iA
+_{$1}$0
+endsnippet
+
+context math(context) && !isUnitMode(editor)
+snippet `(?<!_)([A-Za-z][']*)(?<!mat)(\d|([a-z])\3{1})` "for a_1, a_x, \alpha_1" iA
+``rv = `${m[1]}_${m[2].charAt(0)}```
+endsnippet
+
+context math(context)
+snippet `(?<!_)\\(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta)[']*[ ]?([a-z])\2{1}` "for \alpha_x" iA
+``rv=`\\\\${m[1]}_${m[2]}```
+endsnippet
+
+priority 100
+context math(context)
+snippet `(?<=_)(([\da-z]|\\(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta))\d)` "for a_{12}, a_{x1}, a_{\alpha1}" iA
+{``rv = m[1]``}
+endsnippet
+
+context math(context)
+snippet `(?<=_)([\da-z])([a-z])\2` "for a_{1i}, a_{ij}" iA
+{``rv=`${m[1]}${m[2]}` ``}
+endsnippet
+
+
+
+
+
+#########################################################
+#                        prefix mode                    #
+#########################################################
+
+#### use `prefix` dictionary
+
+context math(context)
+snippet `((?<![_\^])\d+|((?<![_\^])\d*)([A-Za-z]+|\\(alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta)[ ]?))(?<!\\)(bar|fn|td|rm|hat|cr|bav|vec|bm|bf|cal|dot|vdt)` "prefix mode" iA
+``
+let testPrefix = prefix[m[m.length-1]];
+rv = testPrefix[0] + m[1] + testPrefix[1];
+``
+endsnippet
+
+priority 100
+context math(context)
+snippet `((?<![_\^])\d+|(?:(?<![_\^])\d*)(?:[A-Za-z]+|\\(?:alpha|beta|chi|delta|epsilon|varepsilon|phi|varphi|gamma|eta|iota|kappa|varkappa|lambda|mu|nu|omicron|pi|varpi|theta|vartheta|rho|sigma|varsigma|tau|upsilon|omega|xi|psi|zeta|Alpha|Beta|Chi|Delta|Epsilon|Phi|Gamma|Eta|Iota|Kappa|Lambda|Mu|Nu|Omicron|Pi|Theta|Rho|Sigma|Tau|Upsilon|Omega|Xi|Psi|Zeta)[ ]?)[']*)(((\^|_)(\{\w+\}|\w))+)(?<!\\)(bar|fn|td|rm|hat|cr|bav|vec|bm|bf|cal|dot|vdt)` "prefix mode" iA
+``
+let testPrefix = prefix[m[m.length-1]];
+rv = testPrefix[0] + m[1] + testPrefix[1]+m[2];
+``
+endsnippet
+
+
+
+#########################################################
+#                        Unit Mode                      #
+#########################################################
+
+#### trigger 'unitMode'
+#
+# SS ⇨ \mathrm{\
+
+context math(context)
+snippet `SS` "Unit mode" iA
+\\mathrm{\\,$1}$0
+endsnippet
+
+#### Only available in 'UnitMode'
+
+# m3    ⇨ m^3
+# m-    ⇨ m^{-▮}
+# .     ⇨ \cdot
+# cdg  ⇨ \degree C   ║ ℃
+# J/kg. ⇨ J/(kg·▮)
+
+context isUnitMode(editor)
+snippet `(?<=[A-Za-z])(\d)` "^\d" iA
+^``rv=m[1]``
+endsnippet
+
+context isUnitMode(editor)
+snippet `-` "^-" iA
+^{-$1}$0
+endsnippet
+
+priority 10
+context isUnitMode(editor)
+snippet . "·" iA
+``rv='\\\\cdot '``
+endsnippet
+
+priority 10
+context isUnitMode(editor)
+snippet `cdg` "℃" iA
+\\degree C
+endsnippet
+
+priority 20
+context isUnitMode(editor)
+snippet `(?<=\\mathrm\{\\,(?!.*\\mathrm\{\\,)[^\$]*\/)([^\(]*?)\.` "\cdot" iA
+(``rv=m[1]``\\cdot $1)$2
+endsnippet
+
+
+
+
+#########################################################
+#                    Other  Environments                #
+#########################################################
+
+#### 'aligned' environment
+#
+# aln ⇨  \begin{aligned}
+#              ▮
+#         \end{aligned}
+#
+# baln ⇨ \begin{aligned}
+#             &▮
+#         \end{aligned}
+#
+# =ealn ⇨ \begin{aligned}
+#              a&=▮
+#          \end{aligned}
+#
+# Aln ⇨ \begin{aligned}
+#             {visual}
+#        \end{aligned}
+#
+# ==    ⇨   &=
+
+priority 200
+context block_math(context)
+snippet `(.*(?<!b|e))([be]?)aln` "Align" iA
+\\begin{aligned}
+    ``rv = ((m[2]=="b") ? "&":"") + ((m[2]=="e") ? m[1].replace("=","&=") : m[1]).replace(/\\/g,"\\\\");
+    ``$0
+\\end{aligned}
+endsnippet
+
+context isAlignedEnvironment(editor)
+snippet `==` "&=" iA
+&=
+endsnippet
+
+priority 300
+context block_math(context)
+snippet `Aln` "align" iA
+\\begin{aligned}
+    ``rv = visual();``$0
+\\end{aligned}
+endsnippet
+
+#### `case` & `rcase` environment
+
+context math(context)
+snippet `(?<!\{[a-zA-Z]*)(case|rcase)` "case" iA
+\\begin{``rv=m[1]``s}
+    $1
+\\end{``rv=m[1]``s}$0
+endsnippet
+
+#### `text`
+
+context math(context)
+snippet `(?<!\\)(txt|tst|text)` "text" iA
+\\text{$1}$0
+endsnippet
+
+
+
+
+
+##########################################################
+#               transform similar notations              #
+##########################################################
+
+#### Arrows (trigger: `;`)
+#
+# (→) ⇨ (⇒) ⇨ (⟶) ⇨ (⟹) ⇨ (→)(\to) ⇨ (⟹)(\implies)
+# (←) ⇨ (⇐) ⇨ (⟵) ⇨ (⟸) ⇨ (⟸)(\impliedby)
+# (↔) ⇨ (⇔) ⇨ (⟷) ⇨ (⟺) ⇨ (⟺)(\iff)
+# (↓) ⇨ (⇓)
+# (↑) ⇨ (⇑)
+# (↕) ⇨ (⇕)
+
+context math(context)
+snippet `(\\rightarrow|\\Rightarrow|\\longrightarrow|\\Longrightarrow|\\to|\\implies)(| );` "⟹" Ai
+``
+let r=["\\rightarrow","\\Rightarrow","\\longrightarrow","\\Longrightarrow","\\to","\\implies"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\leftarrow|\\Leftarrow|\\longleftarrow|\\Longleftarrow|\\impliedby)(| );` "⟸" Ai
+``
+let r=["\\leftarrow","\\Leftarrow","\\longleftarrow","\\Longleftarrow","\\impliedby"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\leftrightarrow|\\Leftrightarrow|\\longleftrightarrow|\\Longleftrightarrow|\\iff)(| );` "⟺" iA
+``
+let r=["\\leftrightarrow","\\Leftrightarrow","\\longleftrightarrow","\\Longleftrightarrow","\\iff"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\downarrow|\\Downarrow)(| );` "⇓" iA
+``
+let r=["\\downarrow","\\Downarrow"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\uparrow|\\Uparrow)(| );` "⇑" iA
+``
+let r=["\\uparrow","\\Uparrow"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+context math(context)
+snippet `(\\updownarrow|\\Updownarrow)(| );` "⇕" iA
+``
+let r=["\\updownarrow","\\Updownarrow"];
+rv=cycle(r,m[1])+m[2];
+``
+endsnippet
+
+#### Var Greek letter (trigger : `;`)
+#
+# phi  ⇨  varphi
+
+context math(context)
+snippet `(\\|\\var)(epsilon|theta|phi|pi|sigma|kappa)(| );` "greek change" iA
+``let r=["\\","\\var"];
+rv=cycle(r,m[1])+m[2]+m[3];``
+endsnippet
+
+#### fraction (trigger : `;`)
+#
+# frac{1}{2} ⇔ dfrac{1}{2}
+
+context math(context)
+snippet `((\\frac|\\dfrac)\{.*\}\{.*\});` "frac change" iA
+``
+
+    var str=m[1].replace(/\\frac/g,"Ⱆ").replace(/\\dfrac/g,"Ⱉ").split('');
+
+    var depth =0;
+    var i=str.length-1;
+    var test =0;
+
+    while (i>=0) {
+        depth += ( str[i] == '\}' ) ;
+        depth -= ( str[i] == '\{' ) ;
+
+        if ( test == 2 && !depth){
+            if ( str[i] == 'Ⱆ'){ str[i] = 'Ⱉ';break;}
+            if ( str[i] == 'Ⱉ'){ str[i] = 'Ⱆ';break;}
+        }
+        test += !!!depth;
+        i--;
+    }
+
+    rv= (i==-1)?m[1]:str.join('').replace(/Ⱆ/g,"\\\\frac").replace(/Ⱉ/g,"\\\\dfrac");
+``
+endsnippet
+
+#### bracket
+#
+# () ⇔ \left(\right)     (trigger : `;`)
+# [] ⇔ \left[\right]     (trigger : `;`)
+# () ⇔ []                (trigger : `:`)
+
+context math(context)
+snippet `([^\$]*(\)|\])):` "()⇔[]*" iA
+``
+var str=m[1];
+var bra = ["(","["];
+var ket = [")","]"];
+
+var testIndex = (m[2]=="]");
+
+var i=str.length-1;
+str=str.split('');
+
+str[i] = ket[+!testIndex];
+var depth = 1;
+while (i>=0) {
+        depth += (str[i] == ket[+testIndex] )  ;
+        depth -= (str[i] == bra[+testIndex])  ;
+
+        if(!depth){
+            str[i]=bra[+!testIndex];
+            break;
+        }
+    i--;
+    }
+rv=str.join('');
+
+``
+endsnippet
+
+
+context math(context)
+snippet `([^\$]*(\)|\\right\)|\]|\\right\]|\\\}|\\right\\\}));` "()⇔\left(\right)" iA
+``
+    var str=m[1];
+
+    switch(m[2]){
+        case ")" || "\\right)":
+            var bracket=["\\left(","\\right)","(",")"];
+            var testBracket = [/\\left\(/g,/\\right\)/g,/\(/g,/\)/g];
+            break;
+        case "]" || "\\right]":
+            var bracket=["\\left[","\\right]","[","]"];
+            var testBracket = [/\\left\[/g,/\\right\]/g,/\[/g,/\]/g];
+            break;
+        case "\\\}" || "\\right\\\}":
+            var bracket=["\\left\\\{","\\right\\\\\}","\\\{","\\\\\}"];
+            var testBracket = [/\\left\\\{/g,/\\right\\\}/g,/\\\{/g,/\\\}/g];
+            break;
+        default:
+            break;
+    }
+    var rep=["ᑡ","ᑑ","ᐹ","ᐴ"];
+
+    var i=0;
+    while (i<bracket.length) {
+        str=str.replace(testBracket[i],rep[i]);
+        i++;
+    }
+
+    i=str.length-1;
+    str=str.split('');
+    str[i]=(str[i]=='ᐴ'?'ᑑ':'ᐴ')
+    var depth=0;
+    while (i>=0) {
+          depth += (str[i] == 'ᑑ' || str[i] =='ᐴ' ) ;
+          depth -= (str[i] == 'ᐹ' || str[i] =='ᑡ')  ;
+
+          if(!depth){
+            var test =str[i]
+            str[i] =( test=='ᐹ' ? 'ᑡ': 'ᐹ')
+                break;
+          }
+        i--;
+      }
+
+    str=str.join('');
+    i=rep.length;
+    while (--i>=0) str=str.replace(new RegExp(rep[i],'g'),bracket[i]);
+    rv=str;
+``
+endsnippet
+
+# \dot{}   ⇔   \ddot{}
+
+# <Null>
+
+
+
+
+
+
+#########################################################
+#                for Specific Courses                   #
+#########################################################
+
+#### Thermodynamics
+#
+# HH   ⇨ \left(\frac{\partial ▮}{\partial ▮}\right)_{▮}
+#                                   ║   (∂▮/∂▮)▄
+# cvv  ⇨ c_V
+# cvm  ⇨ c_{Vm}
+# cpv  ⇨ c_{pm}
+
+context math(context)
+snippet `HH` "diffraction" iA
+\\left(\\frac{\\partial $1}{\\partial $2}\\right)_{$3}$0
+endsnippet
+
+priority 100000
+context math(context)
+snippet `cvv` "for c_v" iA
+c_V
+endsnippet
+
+priority 100000
+context math(context)
+snippet `cvm` "for c_{Vm}" iA
+c_{Vm}
+endsnippet
+
+priority 100000
+context math(context)
+snippet `cpm` "for c_{Vm}" iA
+c_{pm}
+endsnippet
+
+#### Quantum Mechanics
+#
+# hbar ⇨ \hbar              ║   ℏ            ║ `priority 200` for ×⇨ \overline{h}
+# avg  ⇨ \left< ▮ \right>  ║   <▮>
+# bra  ⇨ \langle ▮|        ║   <▮|
+# ket  ⇨ |▮\rangle         ║   |▮>
+# |ket ⇨ ▮ \rangle         ║    ▮>
+# frt  ⇨ \frac{1}{sqrt{2\pi}}\int_{-\infty}^{+\infty}
+#                           ║  1/√(2π) ∫_∞^∞
+
+
+priority 200
+context math(context)
+snippet `hbar` "hbar" iA
+\\hbar
+endsnippet
+
+context math(context)
+snippet `avg` "average" iA
+\\left< $1 \\right>$0
+endsnippet
+
+context math(context)
+snippet `[bB]ra` "Dirac bra" iA
+\\langle $1|$0
+endsnippet
+
+context math(context)
+snippet `(?<=\|[ ]?)ket` "dirac ket" iA
+$1\\rangle$0
+endsnippet
+
+context math(context)
+snippet `(?<!\|[ ]?)[kK]et` "Dirac bra" iA
+|$1\\rangle$0
+endsnippet
+
+context math(context)
+snippet `\\frt` "fourier trans" iA
+\\frac{1}{sqrt{2\\pi}}\\int_{-\\infty}^{+\\infty}
+endsnippet
+
+
+#### Mathematical methods for physics
+#
+# bsj ⇨ \mathrm{\,J}_{▮\nu}                 ║ Jᵥ
+# jbs ⇨ \mathrm{\,J}_{▮\nu}                 ║ Jᵥ
+# ldp ⇨ \mathrm{\,P}_{▮l}                   ║ Pₗ
+# grn ⇨ G(\boldsymbol{▮};\boldsymbol{▮})   ║ G(▮;▮)
+
+context math(context)
+snippet `bs(j|k|i|n|h)` "Bessel" iA
+\\mathrm{\\,``rv=m[1].toUpperCase()``}_{${1:\\nu}}$0
+endsnippet
+
+context math(context)
+snippet `(j|k|i|n|h)bs` "Bessel" iA
+\\mathrm{\\,``rv=m[1].toUpperCase()``}_{${1:\\nu}}$0
+endsnippet
+
+context math(context)
+snippet `ldp` "LegendreP" iA
+\\mathrm{\\,P}_{${1:l}}^{$2}$0
+endsnippet
+
+context math(context)
+snippet `grn` "Green" iA
+G(\\boldsymbol{${1:r}};\\boldsymbol{${2:r'}})
+endsnippet
+
+
+
+#########################################################
+#               other notations & commands              #
+#########################################################
+
+
+#   QQ     ⇨ ▢        [qed block (with css, don't use in LaTeX)]
+#   %%     ⇨ ★
+#   ？？？ ⇨ ==???==   ['???' with markdown highlight syntax]
+#   BB     ⇨  \boxed{▮}
+#   @@     ⇨  \left.  \right|_{}
+
+context !math(context)
+snippet `QQ` "qed" iA
+<span class="qed"></span>
+endsnippet
+
+context !math(context)
+snippet %% "big star" A
+$\\color{red}\\bigstar$
+endsnippet
+
+context !math(context)
+snippet `(\?\?\?|？？？)` "can't understand" A
+==???==
+endsnippet
+
+context math(context)
+snippet `BB` "cdot" iA
+\\boxed{$1}$0
+endsnippet
+
+context math(context)
+snippet `([^$]*)@@` "at" iA
+``
+let text = m[1]
+
+let depth=0;
+let i=text.length;
+
+while (i>=0) {
+    i--;
+    if (text[i] == '}'|| text[i] == ')' || text[i] ==']' ) depth++;
+    if (text[i] == '{'|| text[i] == '(' || text[i] =='[' ) depth--;
+    if ((text[i] == '+'|| text[i] == '=' || text[i] == '-' || text[i]=='&'|| text[i]==',')&& depth==0 || depth <0) break;
+}
+
+rv=`${text.slice(0,i+1)}\\\\left.${text.slice(i+1,text.length)}\\\\right|_{${snip.tabstop(1)}}^{${snip.tabstop(2)}}`
+
+``
+endsnippet
+
+#### color
+
+# \red· --> {\color{red}▮}
+# \red; --> {\color{red}${visual}}
+
+context math(context)
+snippet `\\(red|green|blue) ` "useful color" iA
+{\\color{``rv=m[1]``}$1}
+endsnippet
+
+context math(context)
+snippet `\\(red|green|blue);` "useful color" iA
+{\\color{``rv=m[1]``}``rv=visual()``}
+endsnippet
+
+
+########################################################
+#                     lint                             #
+########################################################
+
+####
+#
+# {}  ⇨   ' '
+# +!  ⇨   +1
+# +@  ⇨   +2
+# 、、⇨   \\
+# 》  ⇨   >
+
+context math(context)
+snippet `(|_|\^)(?<!\\frac)\{\}([^\$]+)` "delete ^{}" iA
+``rv=m[2].replace(/\\/g,"\\\\")``
+endsnippet
+
+context math(context)
+snippet `\+!` "+1" iA
++1
+endsnippet
+
+context math(context)
+snippet `\+@` "+2" iA
++2
+endsnippet
+
+
+context math(context)
+snippet `、、` "render \\" iA
+\\\\
+endsnippet
+
+snippet `([ ]*)》 ` "quote" iAM
+``rv=(document.getText(document.lineAt(editor.selection.active).range).replace(m[0],"")=="")? (m[1]+'> ') :m[0]``
+endsnippet
+
+########################################################
+#                     Temp                             #
+########################################################
+
+#### autoclose bracket
+#
+# (  ⇨ ()
+# [  ⇨ []
+# {  ⇨ {}
+# \{ ⇨ \{\}
+
+context autoclosing()
+snippet `(?<!\\left)\(` "bracket" iAM
+($1)$0
+endsnippet
+
+context autoclosing()
+snippet `(?<!\\left)\[` "bracket" iA
+[$1]$0
+endsnippet
+
+priority 100
+context autoclosing()
+snippet `\{` "bracket" iA
+{$1}$0
+endsnippet
+
+priority 10000
+context autoclosing() && math(context)
+snippet `(?<!\\left)\\\{` "bracket" iA
+\\{$1\\}$0
+endsnippet
+
+#### magic replace (test)
+
+snippet `├(.*)\|\|(.*)┤;` "replace trigger" iA
+``
+    let pos = editor.selection.active;
+    let text = document.getText(document.lineAt(pos).range);
+    vscode.window.activeTextEditor.edit(editBuilder => {
+        editBuilder.delete(document.lineAt(pos).range);
+    });
+    rv=text.replace(/\\\\/g,"\\\\\\\\").replace(/├.*┤;/g,"").replace(new RegExp(m[1].replace(/([\{\}\(\)\[\]\$\*\.\?\^\+\\\|])/g,"\\"+"$1"),'g'),m[2]).replace(/([\}\$\\])/g,"\\"+"$1")
+``
+endsnippet
+
+
+########################################################
+#                    Trash                             #
+########################################################
