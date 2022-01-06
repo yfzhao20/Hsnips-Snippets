@@ -1659,18 +1659,6 @@ snippet `(?<!\\left)\\\{` "bracket" iA
 \\{$1\\}$0
 endsnippet
 
-#### magic replace (test)
-
-snippet `├(.*)\|\|(.*)┤;` "replace trigger" iA
-``
-    let pos = editor.selection.active;
-    let text = document.getText(document.lineAt(pos).range);
-    vscode.window.activeTextEditor.edit(editBuilder => {
-        editBuilder.delete(document.lineAt(pos).range);
-    });
-    rv=text.replace(/\\\\/g,"\\\\\\\\").replace(/├.*┤;/g,"").replace(new RegExp(m[1].replace(/([\{\}\(\)\[\]\$\*\.\?\^\+\\\|])/g,"\\"+"$1"),'g'),m[2]).replace(/([\}\$\\])/g,"\\"+"$1")
-``
-endsnippet
 
 
 ########################################################
